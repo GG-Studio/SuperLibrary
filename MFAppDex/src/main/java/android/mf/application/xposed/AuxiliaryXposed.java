@@ -3,9 +3,11 @@ package android.mf.application.xposed;
 
 import android.content.Context;
 import android.mf.application.script.WeChatScript;
+import android.mf.application.util.CommandManager;
 import android.mf.application.util.HandlerMessage;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.SyncStateContract;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -17,6 +19,7 @@ public class AuxiliaryXposed {
     private String TAG = "AuxiliaryXposed";
     private double DexVersions = 1.0;
     private Context context = null;
+    private Context initContext = null;
     private XC_LoadPackage.LoadPackageParam lpparam = null;
     private ArrayList<Object> TotalTask = null;
     private ArrayList<Object> Task = null;
@@ -26,6 +29,11 @@ public class AuxiliaryXposed {
 
     public void onCreate(Context context) {
         this.context = context;
+        TotalTask = new ArrayList<>();
+    }
+
+    public void onInit(Context context) {
+        this.initContext = context;
     }
 
     public void onHookLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) throws Throwable {
@@ -33,15 +41,11 @@ public class AuxiliaryXposed {
     }
 
     public void onTask(ArrayList<Object> task) throws Throwable {
-        Toast.makeText(context, "666", Toast.LENGTH_SHORT).show();
-        if (TotalTask == null) {
-            TotalTask = new ArrayList<>();
-        }
         if (task != null) {
             Task = task;
             TotalTask.add(Task);
-            analysisTask();
         }
+        analysisTask();
     }
 
     private void analysisTask() throws Throwable {
@@ -53,7 +57,6 @@ public class AuxiliaryXposed {
             ArrayList<Object> task = (ArrayList<Object>) TotalTask.get(0);
             if (isVersions((Double) task.get(0))) {
                 task.remove(0);
-                Toast.makeText(context, "版本匹配！", Toast.LENGTH_LONG).show();
                 String appName = task.get(0).toString();
                 task.remove(0);
                 switch (appName) {
@@ -101,17 +104,23 @@ public class AuxiliaryXposed {
             } else if (msg.arg1 == 1) {
                 TaskNumber = TaskNumber + 1;
                 TotalTask.remove(0);
-                Toast.makeText(context, "任务执行完成！剩余"+TotalTask.size()+"个任务", Toast.LENGTH_LONG).show();
+                Toast.makeText(context, "任务执行完成！剩余" + TotalTask.size() + "个任务", Toast.LENGTH_LONG).show();
                 if (TotalTask.size() > 0) {
                     try {
-                        Toast.makeText(context, "开始执行新任务任务", Toast.LENGTH_LONG).show();
+                        Toast.makeText(context, "开始执行新任务", Toast.LENGTH_LONG).show();
                         analysisTask();
                     } catch (Throwable throwable) {
                         throwable.printStackTrace();
                     }
-                } else {
-                    HandlerMessage handlerMessage = new HandlerMessage(context);
+                } else if (TotalTask.size() <= 0){
+                    Toast.makeText(context, "任务全部执行完成！", Toast.LENGTH_LONG).show();
+                    CommandManager CMD = new CommandManager(context);
+                    ArrayList<String> cmd = new ArrayList<>();
+                    cmd.add("an force-stop "+ SyncStateContract.Constants.ACCOUNT_NAME);
+                    CMD.executeCommand(cmd);
+                    HandlerMessage handlerMessage = new HandlerMessage(initContext);
                     handlerMessage.resultTask();
+
                 }
             }
             super.handleMessage(msg);

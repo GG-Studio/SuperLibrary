@@ -18,9 +18,7 @@ public class HandlerMessage {
     }
 
     public void resultTask() {
-        if (!isServiceRunning(PfPackage+PfAwakenService)) {
-            AwakenParasitifer(new Intent());
-        }
+        AwakenParasitifer(new Intent());
     }
 
     private boolean isServiceRunning(String ServiceName) {

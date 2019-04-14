@@ -3,7 +3,6 @@ package android.mf.application.script;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 
@@ -32,15 +31,41 @@ public class WeChatScript {
     }
 
     public void setMessageHandler(Handler handel) {
-        this.MessageHandler = handel;
+        if (MessageHandler != handel) {
+            this.MessageHandler = handel;
+        }
     }
 
     public void executeTask(int type) {
-        Toast.makeText(context, "执行任务类型: "+type, Toast.LENGTH_SHORT).show();
-        Message msg = new Message();
-        msg.arg1 = 1;
-        MessageHandler.sendMessage(msg);
+        switch (type) {
+            case 0: //看新闻
+                break;
+            case 1: //朋友圈
+                break;
+            case 2: //看看
+                break;
+            case 3: //搜搜
+                break;
+            case 4: //购物
+                break;
+            case 5: //游戏
+                break;
+            case 6: //小程序
+                break;
+        }
+        MessageHandler.postDelayed(runnable, 15000);
     }
+
+
+    private Runnable runnable=new Runnable(){
+        @Override
+        public void run() {
+            Message msg = new Message();
+            msg.arg1 = 1;
+            MessageHandler.sendMessage(msg);
+        }
+    };
+
 
     private Handler DownloadHandler = new Handler() {
         @Override
