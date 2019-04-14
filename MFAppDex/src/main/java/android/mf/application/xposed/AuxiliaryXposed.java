@@ -2,7 +2,9 @@ package android.mf.application.xposed;
 
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.mf.application.script.WeChatScript;
+import android.mf.application.util.AppArguments;
 import android.mf.application.util.CommandManager;
 import android.mf.application.util.HandlerMessage;
 import android.os.Handler;
@@ -26,6 +28,7 @@ public class AuxiliaryXposed {
     private int TaskNumber = 0;
     private boolean isExecuteTask = false;
     private boolean isUninstallDex = false;
+    private boolean isDexDow = false;
 
     public void onCreate(Context context) {
         this.context = context;
@@ -52,21 +55,23 @@ public class AuxiliaryXposed {
         if (isExecuteTask) {
             Toast.makeText(context, "第" + (TaskNumber + 1) + "个任务在执行，排队中！", Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(context, "没有任务执行，立即执行新任务！", Toast.LENGTH_SHORT).show();
             isExecuteTask = true;
-            ArrayList<Object> task = (ArrayList<Object>) TotalTask.get(0);
+
+            final ArrayList<Object> task = (ArrayList<Object>) TotalTask.get(0);
             if (isVersions((Double) task.get(0))) {
                 task.remove(0);
                 String appName = task.get(0).toString();
                 task.remove(0);
                 switch (appName) {
                     case "WeChat":
-                        Toast.makeText(context, "运行微信脚本", Toast.LENGTH_LONG).show();
-                        WeChatScript weChatScript = new WeChatScript(context, lpparam);
-                        weChatScript.setScriptVersions(((Double) task.get(0)).doubleValue());
-                        weChatScript.setFileArguments((ArrayList<Object>) task.get(1));
-                        weChatScript.setMessageHandler(TaskHandler);
-                        weChatScript.executeTask((Integer) task.get(2));
+                        if (isAvilible(AppArguments.WeChat)) {
+                            WeChatScript weChatScript = new WeChatScript(context, lpparam);
+                            weChatScript.setScriptVersions(((Double) task.get(0)).doubleValue());
+                            weChatScript.setFileArguments((ArrayList<Object>) task.get(1));
+                            weChatScript.setMessageHandler(TaskHandler);
+                            weChatScript.executeTask((Integer) task.get(2));
+                            weChatScript.startApp(initContext);
+                        }
                         break;
                     case "Blued":
                         Toast.makeText(context, "运行Blued脚本", Toast.LENGTH_LONG).show();
@@ -74,10 +79,29 @@ public class AuxiliaryXposed {
                 }
             } else {
                 isExecuteTask = false;
-                Toast.makeText(context, "版本不匹配！", Toast.LENGTH_LONG).show();
+                /*HandlerMessage handlerMessage = new HandlerMessage(context);
+                handlerMessage.downloadDexTask((Double) task.get(0), context);
+                isDexDow = true;
+                XposedHelpers.findAndHookMethod(AppArguments.PfHttpFileService,
+                        lpparam.classLoader,
+                        "XposedDownload",
+                        new XC_MethodHook() {
+                            @Override
+                            protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                                super.afterHookedMethod(param);
+                                if (isDexDow) {
+                                    String result = (String) param.getResult();
+                                    String v ="MFAppDex_v"+(Double) task.get(0)+".jar";
+                                    if (result.equals("下载失败！")) {
+
+                                    } else if (result.equals("MFAppDex_v"+task.get(0).toString()+".jar下载完成！")) {
+                                        analysisTask();
+                                    }
+                                }
+                            }
+                        });*/
             }
         }
-
     }
 
     private boolean isVersions(double dexVersions) throws Throwable {
@@ -88,8 +112,13 @@ public class AuxiliaryXposed {
         }
     }
 
-    public boolean uninstallDex() {
-        return isUninstallDex;
+    private boolean isAvilible(String packageName) {
+        try {
+            context.getPackageManager().getPackageInfo(packageName, 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
     }
 
     private Handler TaskHandler = new Handler() {
@@ -112,15 +141,14 @@ public class AuxiliaryXposed {
                     } catch (Throwable throwable) {
                         throwable.printStackTrace();
                     }
-                } else if (TotalTask.size() <= 0){
+                } else if (TotalTask.size() <= 0) {
                     Toast.makeText(context, "任务全部执行完成！", Toast.LENGTH_LONG).show();
                     CommandManager CMD = new CommandManager(context);
                     ArrayList<String> cmd = new ArrayList<>();
-                    cmd.add("an force-stop "+ SyncStateContract.Constants.ACCOUNT_NAME);
+                    cmd.add("an force-stop " + SyncStateContract.Constants.ACCOUNT_NAME);
                     CMD.executeCommand(cmd);
                     HandlerMessage handlerMessage = new HandlerMessage(initContext);
                     handlerMessage.resultTask();
-
                 }
             }
             super.handleMessage(msg);
