@@ -3,6 +3,7 @@ package android.mf.application.xposed;
 
 import android.content.Context;
 import android.mf.application.script.WeChatScript;
+import android.mf.application.util.HandlerMessage;
 import android.os.Handler;
 import android.os.Message;
 import android.widget.Toast;
@@ -98,9 +99,9 @@ public class AuxiliaryXposed {
                     TaskNumber = TaskNumber - 1;
                 }
             } else if (msg.arg1 == 1) {
-                Toast.makeText(context, "任务执行完成！剩余"+TotalTask.size()+"个任务", Toast.LENGTH_LONG).show();
                 TaskNumber = TaskNumber + 1;
                 TotalTask.remove(0);
+                Toast.makeText(context, "任务执行完成！剩余"+TotalTask.size()+"个任务", Toast.LENGTH_LONG).show();
                 if (TotalTask.size() > 0) {
                     try {
                         Toast.makeText(context, "开始执行新任务任务", Toast.LENGTH_LONG).show();
@@ -108,33 +109,12 @@ public class AuxiliaryXposed {
                     } catch (Throwable throwable) {
                         throwable.printStackTrace();
                     }
+                } else {
+                    HandlerMessage handlerMessage = new HandlerMessage(context);
+                    handlerMessage.resultTask();
                 }
             }
             super.handleMessage(msg);
         }
     };
-/*
-    public class uninstallDexThread implements Runnable{
-        @Override
-        public void run() {
-            isUninstallDex = true;
-            while (isUninstallDex) {
-                try {
-                    Thread.sleep(1000);// 线程暂停1秒，单位毫秒
-                    Message message = new Message();
-                    message.what = 1;
-                    uninstallDexhandler.sendMessage(message);// 发送消息
-                }catch (Exception e){
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
-    private Handler uninstallDexhandler = new Handler() {
-        @Override
-        public void handleMessage(Message msg) {
-            isUninstallDex = false;
-            super.handleMessage(msg);
-        }
-    };*/
 }
